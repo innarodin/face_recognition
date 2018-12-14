@@ -1,0 +1,123 @@
+services:
+  check_bot_inserts:
+    build:
+      context: ./check_bot_inserts
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    links:
+    - db
+    ports:
+    - 6011
+    restart: always
+    volumes:
+    - /home/clara/dump/dockers/face_recognition/check_bot_inserts:/app
+    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - nvidia_driver_390.87:/usr/local/nvidia:ro
+  classifier_creator:
+    build:
+      context: ./classifier_creator
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    links:
+    - db
+    ports:
+    - 6010
+    restart: always
+    volumes:
+    - /home/clara/dump/dockers/face_recognition/classifier_creator:/app
+    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - nvidia_driver_390.87:/usr/local/nvidia:ro
+  classify:
+    build:
+      context: ./classify
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    links:
+    - db
+    ports:
+    - 6008
+    restart: always
+    volumes:
+    - /home/clara/dump/dockers/face_recognition/classify:/app
+    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - nvidia_driver_390.87:/usr/local/nvidia:ro
+  db:
+    build:
+      context: ./db
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    ports:
+    - 5432:5432
+    volumes:
+    - /home/clara/dump/dockers/face_recognition/volumes/postgresql/9.5/main:/var/lib/postgresql/data
+    - nvidia_driver_390.87:/usr/local/nvidia:ro
+  detector:
+    build:
+      context: ./detector
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    ports:
+    - 6006
+    restart: always
+    volumes:
+    - /home/clara/dump/dockers/face_recognition/detector:/app
+    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - nvidia_driver_390.87:/usr/local/nvidia:ro
+  identification:
+    build:
+      context: ./identification
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    ports:
+    - 6007
+    restart: always
+    volumes:
+    - /home/clara/dump/dockers/face_recognition/identification:/app
+    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - nvidia_driver_390.87:/usr/local/nvidia:ro
+  photo_push:
+    build:
+      context: ./photo_push
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    ports:
+    - 6009
+    restart: always
+    volumes:
+    - /home/clara/dump/dockers/face_recognition/photo_push:/app
+    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - nvidia_driver_390.87:/usr/local/nvidia:ro
+version: '2'
+volumes:
+  nvidia_driver_390.87:
+    external: true
