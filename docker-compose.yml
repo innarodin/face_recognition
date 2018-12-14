@@ -14,8 +14,8 @@ services:
     - 6011
     restart: always
     volumes:
-    - /home/clara/dump/dockers/face_recognition/check_bot_inserts:/app
-    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - /home/user/teledomophone/face_recognition/check_bot_inserts:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
     - nvidia_driver_390.87:/usr/local/nvidia:ro
   classifier_creator:
     build:
@@ -32,8 +32,8 @@ services:
     - 6010
     restart: always
     volumes:
-    - /home/clara/dump/dockers/face_recognition/classifier_creator:/app
-    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - /home/user/teledomophone/face_recognition/classifier_creator:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
     - nvidia_driver_390.87:/usr/local/nvidia:ro
   classify:
     build:
@@ -50,8 +50,8 @@ services:
     - 6008
     restart: always
     volumes:
-    - /home/clara/dump/dockers/face_recognition/classify:/app
-    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - /home/user/teledomophone/face_recognition/classify:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
     - nvidia_driver_390.87:/usr/local/nvidia:ro
   db:
     build:
@@ -67,7 +67,7 @@ services:
     ports:
     - 5432:5432
     volumes:
-    - /home/clara/dump/dockers/face_recognition/volumes/postgresql/9.5/main:/var/lib/postgresql/data
+    - /home/user/teledomophone/face_recognition/volumes/postgresql/9.5/main:/var/lib/postgresql/data
     - nvidia_driver_390.87:/usr/local/nvidia:ro
   detector:
     build:
@@ -82,8 +82,8 @@ services:
     - 6006
     restart: always
     volumes:
-    - /home/clara/dump/dockers/face_recognition/detector:/app
-    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - /home/user/teledomophone/face_recognition/detector:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
     - nvidia_driver_390.87:/usr/local/nvidia:ro
   identification:
     build:
@@ -98,8 +98,8 @@ services:
     - 6007
     restart: always
     volumes:
-    - /home/clara/dump/dockers/face_recognition/identification:/app
-    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - /home/user/teledomophone/face_recognition/identification:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
     - nvidia_driver_390.87:/usr/local/nvidia:ro
   photo_push:
     build:
@@ -114,8 +114,8 @@ services:
     - 6009
     restart: always
     volumes:
-    - /home/clara/dump/dockers/face_recognition/photo_push:/app
-    - /home/clara/dump/dockers/face_recognition/volumes:/volumes
+    - /home/user/teledomophone/face_recognition/photo_push:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
     - nvidia_driver_390.87:/usr/local/nvidia:ro
 version: '2'
 volumes:
