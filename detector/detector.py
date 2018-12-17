@@ -1,5 +1,3 @@
-#!/usr/bin/python3.5
-
 import argparse
 import sys
 import time
@@ -10,7 +8,7 @@ import numpy as np
 import pytz
 import datetime
 from configobj import ConfigObj
-import mtcnn_detector
+#import mtcnn_detector
 from rabbitmq import RabbitClass
 import tensorflow as tf
 from detect_face import detect_face, create_mtcnn
@@ -58,18 +56,18 @@ def detect(channel, method_frame, header_frame, body):
     image = np.asarray(bytearray(face_string), dtype="uint8")
     image = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
-    bounding_boxes = None
-    try:
-        bounding_boxes, feature_points = detector.detect_face(image)
-    except TypeError:
-        pass
+    # bounding_boxes = None
+    # try:
+    #     bounding_boxes, feature_points = detector.detect_face(image)
+    # except TypeError:
+    #     pass
 
-    # bounding_boxes, feature_points = detect_face(image, minsize, pnet, rnet, onet, threshold, factor)
+    bounding_boxes, feature_points = detect_face(image, minsize, pnet, rnet, onet, threshold, factor)
     # tmp_time = time.time()
     # logger.debug("delay detect: {}".format(tmp_time - t2))
 
-    # if len(bounding_boxes) == 0:
-    if bounding_boxes is None:
+    if len(bounding_boxes) == 0:
+    # if bounding_boxes is None:
         if r.get("detect" + str(session_id)) is None:
             r.set("detect" + str(session_id), 1)
             logger.debug("No face {}".format(session_id))
@@ -159,12 +157,12 @@ if __name__ == "__main__":
 
     # get configuration parameters
     detector_config = config['detector']
-    detector = mtcnn_detector.MtcnnDetector()
-    # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
-    # pnet, rnet, onet = create_mtcnn(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)), model_path="/volumes/model")
-    # minsize = 80  # minimum size of face
-    # threshold = [0.6, 0.7, 0.7]  # three steps's threshold
-    # factor = 0.709  # scale factor
+    # detector = mtcnn_detector.MtcnnDetector()
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
+    pnet, rnet, onet = create_mtcnn(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)), model_path="/volumes/model")
+    minsize = 80  # minimum size of face
+    threshold = [0.6, 0.7, 0.7]  # three steps's threshold
+    factor = 0.709  # scale factor
 
     r = redis.StrictRedis(host='10.80.0.22', port=6379, db=0)
 
@@ -186,4 +184,3 @@ if __name__ == "__main__":
     queue.create_queue('detect')
     logger.debug("Start detector")
     queue.read_queue(detect)
-

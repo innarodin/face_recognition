@@ -1,4 +1,4 @@
-FROM nvidia/cuda:9.0-base-ubuntu16.04
+FROM ubuntu:16.04 
 
 LABEL maintainer="rodinskayaia"
 
@@ -6,18 +6,8 @@ LABEL maintainer="rodinskayaia"
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         curl \
-        libcudnn7=7.1.4.18-1+cuda9.0 \
-        libnccl2=2.2.13-1+cuda9.0 \
-        libfreetype6-dev \
-        libhdf5-serial-dev \
-        libpng12-dev \
-        libzmq3-dev \
-	libsm6 \
-	libxrender1 \
-	libfontconfig1 \
-        pkg-config \
         python3 \
-        python3-dev \
+        python3-dev \ 
         rsync \
         software-properties-common \
         unzip \

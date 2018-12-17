@@ -1,0 +1,111 @@
+services:
+  redis:                                                                          
+    image: redis
+    ports:
+    - "6379:6379" 
+
+  check_bot_inserts:
+    build:
+      context: ./check_bot_inserts
+    links:
+    - db
+    ports:
+    - 6011
+    restart: always
+    volumes:
+    - /home/user/teledomophone/face_recognition/check_bot_inserts:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
+
+  classifier_creator:
+    build:
+      context: ./classifier_creator
+    links:
+    - db
+    ports:
+    - 6010
+    restart: always
+    volumes:
+    - /home/user/teledomophone/face_recognition/classifier_creator:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
+
+  classify:
+    build:
+      context: ./classify
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    links:
+    - db
+    ports:
+    - 6008
+    restart: always
+    volumes:
+    - /home/user/teledomophone/face_recognition/classify:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
+    - nvidia_driver_384.130:/usr/local/nvidia:ro
+
+  db:
+    build:
+      context: ./db
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    ports:
+    - 5432:5432
+    volumes:
+    - /home/user/teledomophone/face_recognition/volumes/postgresql/9.5/main:/var/lib/postgresql/data
+
+  detector:
+    build:
+      context: ./detector
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    ports:
+    - 6006
+    restart: always
+    volumes:
+    - /home/user/teledomophone/face_recognition/detector:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
+    - nvidia_driver_384.130:/usr/local/nvidia:ro
+    runtime: nvidia
+
+  identification:
+    build:
+      context: ./identification
+    devices:
+    - /dev/nvidia0
+    - /dev/nvidiactl
+    - /dev/nvidia-uvm
+    - /dev/nvidia-uvm-tools
+    dns: 78.29.2.21
+    ports:
+    - 6007
+    restart: always
+    volumes:
+    - /home/user/teledomophone/face_recognition/identification:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
+    - nvidia_driver_384.130:/usr/local/nvidia:ro
+    runtime: nvidia
+
+  photo_push:
+    build:
+      context: ./photo_push
+    dns: 78.29.2.21
+    ports:
+    - 6009
+    restart: always
+    volumes:
+    - /home/user/teledomophone/face_recognition/photo_push:/app
+    - /home/user/teledomophone/face_recognition/volumes:/volumes
+
+version: '2.4'
+volumes:
+  nvidia_driver_384.130:
+    external: true

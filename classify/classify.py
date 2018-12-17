@@ -28,7 +28,7 @@ def face_distance(face_encodings, face_to_compare):
 
 def get_centroids_from_db(address_name):
     model = '20181022-081754'
-    with postgresql.open('pq://postgres:postgres@10.80.0.22:5432/recognition') as db:
+    with postgresql.open('pq://postgres:postgres@10.100.10.6:5432/recognition') as db:
         result = db.query("SELECT c.name, c.embedding, c.distance FROM centroids c JOIN addresses a on "
                           "c.address_id=a.id WHERE a.name='{}' and c.model='{}' and c.creation_date=("
                           "SELECT MAX(c.creation_date) FROM centroids c JOIN addresses a ON c.address_id=a.id "
@@ -100,7 +100,7 @@ def classification(channel, method, props, body):
         dist = None
 
     msg = {
-        'predicts': (found_cluster, dist),
+        'predict': (found_cluster, dist),
         'service_id': service_id,
         'session_id': session_id,
         'type': 'face'
@@ -131,7 +131,7 @@ def classification(channel, method, props, body):
         't6': t6,
         't7': t7
     }
-    queue.send_message(msg, 'final')
+    #queue.send_message(msg, 'final')
 
     logger.debug("redis {} {}".format(session_id, r.get(str(session_id))))
 

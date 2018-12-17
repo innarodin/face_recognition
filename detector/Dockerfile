@@ -48,16 +48,14 @@ RUN pip3 --no-cache-dir install \
         numpy==1.14.5 \
         pandas \
         scipy \
-        mxnet-cu90 \
         sklearn \
 	opencv-python \
 	opencv-contrib-python \
 	pika \
+	mxnet-cu90 \
 	configobj \
-	py-postgresql
-
-RUN pip3 --no-cache-dir install redis \
-	redisworks
+	py-postgresql \
+        redis
 
 # Install TensorFlow GPU version.
 RUN pip3 --no-cache-dir install \
