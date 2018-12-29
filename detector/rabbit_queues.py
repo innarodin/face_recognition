@@ -25,11 +25,11 @@ class RabbitQueue:
         self.config = ConfigObj(path_config)
 
         amqp_url = 'amqp://%s:%s@%s:%s/%s' % (
-            self.config['rabbitmq_voice']['user'],
-            self.config['rabbitmq_voice']['pass'],
-            self.config['rabbitmq_voice']['host'],
-            self.config['rabbitmq_voice']['port'],
-            self.config['rabbitmq_voice']['vhost'],
+            self.config['rabbitmq_vad']['user'],
+            self.config['rabbitmq_vad']['pass'],
+            self.config['rabbitmq_vad']['host'],
+            self.config['rabbitmq_vad']['port'],
+            self.config['rabbitmq_vad']['vhost'],
         )
         amqp_url_query = {
             'heartbeat_interval': 60

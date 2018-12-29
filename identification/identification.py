@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--config', '-c',
                         dest='config', type=str,
-                        default="/app/recognition.cfg",
+                        default="/volumes/recognition.cfg",
                         help='Path to configuration file'
                         )
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
     logger.addHandler(fh)  # add handler to logger object
 
-    queue = RabbitQueue("/app/queues.cfg")
+    queue = RabbitQueue(args.config)
     queue_handler = QueueHandler()
     queue_handler.set_queue(queue)
     queue_handler.setLevel(logging.INFO)

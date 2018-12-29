@@ -35,10 +35,10 @@ def create_photo(ch, method, properties, body):
     logger.debug("Time1: {}".format(time.time() - received_time))
 
     for i in range(5):
+        t0 = time.time()
         if r_cache.get(str(session_id)) is not None:
             return
 
-        t0 = time.time()
         frame = service_dict[service_id].read()
         if frame is None:
             logger.error("Error frame")
@@ -49,7 +49,7 @@ def create_photo(ch, method, properties, body):
 
         retval, frame_jpg = cv2.imencode(".jpg", frame)
         msg = {
-            "t0": received_time,
+            "t0": t0,
             "t1": t1,
             "face": frame_jpg.tobytes(),
             "service_id": service_id,
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         description='Video stream capturing component for face detection and recognition service')
     parser.add_argument('--config', '-c',
                         dest='config', type=str,
-                        default='/app/recognition.cfg',
+                        default='/volumes/recognition.cfg',
                         help='Path to configuration file'
                         )
 
@@ -99,9 +99,9 @@ if __name__ == "__main__":
     fh.setFormatter(formatter)
     logger.addHandler(fh)  # add handler to logger object
 
-    queue = RabbitQueue("/app/queues.cfg")
+    queue_vad = RabbitQueue(args.config)
     queue_handler = QueueHandler()
-    queue_handler.set_queue(queue)
+    queue_handler.set_queue(queue_vad)
     queue_handler.setLevel(logging.INFO)
     queue_handler.setFormatter(formatter)
     logger.addHandler(queue_handler)
@@ -110,7 +110,6 @@ if __name__ == "__main__":
         sys.exit("Mandatory section missing: %s" % 'rabbitmq')
 
     queue = RabbitClass(args.config, logger)
-    r = RabbitQueue('/app/queues.cfg')
     logger.debug("Start photo push")
     # create_photo()
-    r.read_queue_with_direct_exchange(create_photo, 'kicks', 'kick_face')
+    queue_vad.read_queue_with_direct_exchange(create_photo, 'kicks', 'kick_face')

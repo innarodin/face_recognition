@@ -57,9 +57,6 @@ RUN pip3 --no-cache-dir install \
 	configobj \
 	py-postgresql
 
-RUN pip3 --no-cache-dir install redis \
-	redisworks
-
 # Install TensorFlow GPU version.
 RUN pip3 --no-cache-dir install \
     tensorflow_gpu==1.10.1

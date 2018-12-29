@@ -46,15 +46,18 @@ class RabbitClass:
         self.queue_name = queue_name
         self.channel.queue_declare(queue=self.queue_name)
 
-    def read_queue(self, callback):
-        result = self.channel.queue_declare(exclusive=True, durable=True)
+    def read_queue(self, callback, queue_name):
+        result = self.channel.queue_declare(queue_name, durable=False)
         self.channel.queue_bind(exchange=self.exchange,
-                                queue=self.queue_name,
-                                routing_key=self.queue_name)
+                                queue=queue_name,
+                                routing_key=queue_name)
 
+        consumer_id = ''.join(['%02X' % random.getrandbits(8) for _ in range(8)])
+
+        self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(
         lambda channel, method_frame, header_frame, body: callback(channel, method_frame, header_frame, body),
-            queue=self.queue_name, no_ack=True)
+            queue=queue_name, consumer_tag='{}.{}'.format(queue_name, consumer_id), no_ack=True)
 
         try:
             self.channel.start_consuming()

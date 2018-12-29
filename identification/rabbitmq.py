@@ -73,11 +73,22 @@ class RabbitClass:
             sys.exit(255)
 
     def send_message(self, body, name_queue):
-        self.channel.basic_publish(self.exchange,
-                                   name_queue,
-                                   pickle.dumps(body),
-                                   pika.BasicProperties(
-                                       content_type='application/json',
-                                       delivery_mode=2,
-                                   )
-                                   )
+        try:
+            self.channel.basic_publish(self.exchange,
+                                       name_queue,
+                                       pickle.dumps(body),
+                                       pika.BasicProperties(
+                                           content_type='application/json',
+                                           delivery_mode=2,
+                                       )
+                                       )
+        except pika.exceptions.ConnectionClosed:
+            self.create_connection()
+            self.channel.basic_publish(self.exchange,
+                                       name_queue,
+                                       pickle.dumps(body),
+                                       pika.BasicProperties(
+                                           content_type='application/json',
+                                           delivery_mode=2,
+                                       )
+                                       )

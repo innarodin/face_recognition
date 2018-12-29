@@ -5,10 +5,15 @@ import numpy as np
 import time
 import sys
 import logging
+import redis
+import pickle
+import psycopg2.extensions
+import select
+import json
 
 
 def get_embeddings():
-    with postgresql.open('pq://postgres:postgres@10.80.0.22:5432/recognition') as db:
+    with postgresql.open('pq://postgres:postgres@db:5432/recognition') as db:
         result = db.query("SELECT name, embedding FROM embeddings;")
 
     embs = {}
@@ -35,14 +40,17 @@ def face_distance(face_encodings, face_to_compare):
 
 
 def write_centers_to_db(centers):
-    with postgresql.open('pq://postgres:postgres@10.80.0.22:5432/recognition') as db:
+    with postgresql.open('pq://postgres:postgres@db:5432/recognition') as db:
         upd = db.prepare("UPDATE centers SET embedding=$1, distance=$2 WHERE name=$3;")
+        ins = db.prepare("INSERT INTO centers (name, embedding, distance) VALUES ($1, $2, $3);")
 
         for name in centers:
             emb = centers[name][0]
             dist = centers[name][1]
-
-            upd(emb[0], dist, name)
+            if name in pickle.loads(r.get('centers')):
+                upd(emb[0], dist, name)
+            else:
+                ins(name, emb[0], dist)
 
 
 def create_classifier():
@@ -101,11 +109,6 @@ def create_classifier():
         else:
             available_dist = max_dists[name]
 
-        # if available_dist < 0.4:
-        #     available_dist = 0.4
-        # elif available_dist > 0.6:
-        #     available_dist = 0.6
-
         # get all embeddings in radius
         dataset_available_embeddings = []
         for obj_emb in embs_loaded[name]:
@@ -118,12 +121,12 @@ def create_classifier():
         # get center
         center = np.mean(dataset_available_embeddings, axis=0)
         centers[name] = (center, available_dist)
-        # print(centers[name])
         logger.info("Name: {}, all embs: {}, available embs: {}, radius: {}".format(name, len(embs_loaded[name]),
                                                                                     len(dataset_available_embeddings),
                                                                                     available_dist))
 
     write_centers_to_db(centers)
+    r.set('centers', pickle.dumps(centers))
 
 
 if __name__ == '__main__':
@@ -134,7 +137,35 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
     logger.addHandler(fh)  # add handler to logger object
 
+    r = redis.StrictRedis(host='redis', port=6379, db=0)
+
+    conn = psycopg2.connect(dbname='recognition', user='postgres', password='postgres', host='db')
+    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+
+    curs = conn.cursor()
+    curs.execute("LISTEN embeddings;")
+
+    inserts = 0
+
+    logger.info("Waiting for notifications on channel 'embeddings'")
+
     while True:
-        create_classifier()
-        time.sleep(120)
+        if select.select([conn], [], [], 5) != ([], [], []):
+            conn.poll()
+            while conn.notifies:
+                notify = conn.notifies.pop(0)
+                logger.info("Got NOTIFY: {} {} {}".format(notify.pid, notify.channel, notify.payload))
+
+                name = json.loads(notify.payload)["name"]
+                if name in pickle.loads(r.get('centers')):
+                    inserts += 1
+                    if inserts == 10:
+                        inserts = 0
+                        create_classifier()
+                else:
+                    inserts += 1
+                    if inserts == 50:
+			inserts = 0
+                        logger.info("NEW USER: {}".format(name))
+                        create_classifier()
 

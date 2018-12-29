@@ -15,7 +15,6 @@ from rabbitmq import RabbitClass
 import json
 import logging
 from rabbit_queues import RabbitQueue, QueueHandler
-from redisworks import Root
 
 
 def face_distance(face_encodings, face_to_compare):
@@ -26,38 +25,8 @@ def face_distance(face_encodings, face_to_compare):
         return np.empty(0)
 
 
-def get_centroids_from_db(address_name):
-    model = '20181022-081754'
-    with postgresql.open('pq://postgres:postgres@10.100.10.6:5432/recognition') as db:
-        result = db.query("SELECT c.name, c.embedding, c.distance FROM centroids c JOIN addresses a on "
-                          "c.address_id=a.id WHERE a.name='{}' and c.model='{}' and c.creation_date=("
-                          "SELECT MAX(c.creation_date) FROM centroids c JOIN addresses a ON c.address_id=a.id "
-                          "WHERE a.name='{}')".format(address_name, model, address_name))
-        centers = {}
-        for i in result:
-            emb_array = [[]]
-            emb_array[0] = list(map(float, i[1]))
-            emb_array = np.asarray(emb_array)
-            centers[i[0]] = (emb_array, i[2])
-
-    return centers
-
-
-def get_centroids_from_bot():
-    with postgresql.open('pq://postgres:postgres@10.80.0.22:5432/recognition') as db:
-        result = db.query("SELECT name, embedding, distance FROM centers;")
-        centers = {}
-        for i in result:
-            emb_array = [[]]
-            emb_array[0] = list(map(float, i[1]))
-            emb_array = np.asarray(emb_array)
-            centers[i[0]] = (emb_array, i[2])
-
-    return centers
-
-
 def save_emb_to_db(found_cluster, embedding):
-    with postgresql.open('pq://postgres:postgres@10.80.0.22:5432/recognition') as db:
+    with postgresql.open('pq://postgres:postgres@db:5432/recognition') as db:
         ins = db.prepare("INSERT INTO embeddings (name, embedding) VALUES ($1, $2);")
         ins(found_cluster, embedding[0])
 
@@ -80,7 +49,7 @@ def classification(channel, method, props, body):
     if r.get(str(session_id)) is not None:
         return
 
-    centers = get_centroids_from_bot()
+    centers = pickle.loads(r.get('centers'))
 
     face_distances = {}
     for name in centers:
@@ -92,7 +61,6 @@ def classification(channel, method, props, body):
     if face_distances[min_dist_cluster] <= centers[min_dist_cluster][1]:
         found_cluster = min_dist_cluster
         dist = face_distances[found_cluster]
-
         save_emb_to_db(found_cluster, embedding)
 
     else:
@@ -105,8 +73,19 @@ def classification(channel, method, props, body):
         'session_id': session_id,
         'type': 'face'
     }
+
+    logger.debug("redis {}".format(r.get(str(session_id))))
+    if r.get(str(session_id)) is not None:
+        return
+
     queue.send_message(msg, 'voice_face')
     logger.debug("sent")
+
+    if found_cluster != 'Unknown':
+        with postgresql.open('pq://postgres:postgres@db:5432/recognition') as db:
+            result = db.query("SELECT username FROM username_id WHERE user_id={};".format(found_cluster))
+            if result[0][0] is not None:
+                found_cluster = result[0][0]
 
     msg = {
         "service_id": service_id,
@@ -116,24 +95,15 @@ def classification(channel, method, props, body):
     logger.info(msg)
 
     t7 = time.time()
-    msg = {
-        'name': found_cluster,
-        'confidence': dist,
-        'service_id': service_id,
-        'path': path,
-        'session_id': session_id,
-        't0': t0,
-        't1': t1,
-        't2': t2,
-        't3': t3,
-        't4': t4,
-        't5': t5,
-        't6': t6,
-        't7': t7
-    }
-    #queue.send_message(msg, 'final')
 
-    logger.debug("redis {} {}".format(session_id, r.get(str(session_id))))
+    logger.debug("Photo push: {}".format(t1 - t0))
+    logger.debug("Photo push -> detector: {}".format(t2 - t1))
+    logger.debug("detector: {}".format(t3 - t2))
+    logger.debug("detector -> ident: {}".format(t4 - t3))
+    logger.debug("ident: {}".format(t5 - t4))
+    logger.debug("ident -> classify: {}".format(t6 - t5))
+    logger.debug("classify: {}".format(t7 - t6))
+    logger.debug("All time: {}".format(t7 - t0))
 
 
 if __name__ == '__main__':
@@ -142,7 +112,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--config', '-c',
                         dest='config', type=str,
-                        default="/app/recognition.cfg",
+                        default="/volumes/recognition.cfg",
                         help='Path to configuration file'
                         )
 
@@ -164,7 +134,7 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
     logger.addHandler(fh)  # add handler to logger object
 
-    queue = RabbitQueue("/app/queues.cfg")
+    queue = RabbitQueue(args.config)
     queue_handler = QueueHandler()
     queue_handler.set_queue(queue)
     queue_handler.setLevel(logging.INFO)
@@ -173,11 +143,7 @@ if __name__ == '__main__':
 
     logger.debug("Start classify")
 
-    people_dict = {}
-    centers_dict = {}
-
-    root = Root(host='10.80.0.22', port=6379, db=0)
-    r = redis.StrictRedis(host='10.80.0.22', port=6379, db=0)
+    r = redis.StrictRedis(host='redis', port=6379, db=0)
 
     queue = RabbitClass(args.config, logger)
     queue.create_queue('classify')
